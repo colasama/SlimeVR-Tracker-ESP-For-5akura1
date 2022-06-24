@@ -30,12 +30,9 @@
     #include <Preferences.h> // ICM bias saving. ESP8266 use eprom
 #endif
 
-#define ICM_ADDR_1 0x68
-#define ICM_ADDR_2 0x69
-
 class ICM20948Sensor : public Sensor {
 public:
-    ICM20948Sensor() = default;
+    ICM20948Sensor() : Sensor("ICM20948Sensor"){}
     ~ICM20948Sensor() override = default;
     void motionSetup() override final;
     void motionLoop() override final;
@@ -48,7 +45,6 @@ private:
     int bias_save_counter = 0;
     bool newTap;
     
-    uint8_t lastReset = 0;
     ICM_20948_I2C imu;
     ICM_20948_Device_t pdev;
     icm_20948_DMP_data_t dmpData {};

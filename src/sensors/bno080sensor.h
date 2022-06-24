@@ -26,7 +26,7 @@
 class BNO080Sensor : public Sensor
 {
 public:
-    BNO080Sensor(){};
+    BNO080Sensor() : Sensor("BNO080Sensor"){};
     ~BNO080Sensor(){};
     void motionSetup() override final;
     void motionLoop() override final;
@@ -40,6 +40,7 @@ private:
     uint8_t tap;
     unsigned long lastData = 0;
     uint8_t lastReset = 0;
+    BNO080Error lastError{};
 
     // Magnetometer specific members
     Quat magQuaternion{};

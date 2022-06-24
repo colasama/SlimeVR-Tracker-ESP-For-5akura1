@@ -27,40 +27,13 @@
 #include "network/network.h"
 #include "ledmgr.h"
 
-#define BIAS_DEBUG false
-
 // seconds after previous save (from start) when calibration (DMP Bias) data will be saved to NVS. Increments through the list then stops; to prevent unwelcome eeprom wear.
 int bias_save_periods[] = { 120, 180, 300, 600, 600 }; // 2min + 3min + 5min + 10min + 10min (no more saves after 30min)
-const uint8_t number_i2c_addr = 1;
-uint8_t poss_addresses[number_i2c_addr] = {0X69}; // 0X68
-
-// #ifndef USE_6_AXIS
-//     #define USE_6_AXIS true
-// #endif
 
 // #ifndef ENABLE_TAP
 //     #define ENABLE_TAP false
 // #endif
-/* // you cant add more than 2 sensor on 1 i2c bus also upstream library does not allow it
-void ICM20948Sensor::i2c_scan() { // Basically obsolete but kept for when adding > 2 external 
-    uint8_t error;
 
-    for (uint8_t add_int = 0; add_int < number_i2c_addr; add_int++ )
-    {
-        Serial.printf("Scanning 0x%02X for slave... ", poss_addresses[add_int]);
-        Wire.beginTransmission(poss_addresses[add_int]);
-        error = Wire.endTransmission();
-        if (error == 0){          
-              Serial.print("Found at address. ");       
-            if (poss_addresses[add_int] == 0x69 || poss_addresses[add_int] == 0x68){
-                  Serial.println("\t Address is ICM.");
-                addr = poss_addresses[add_int];
-                ICM_found = true; 
-            }
-        }
-    }
-}
-*/
 void ICM20948Sensor::save_bias(bool repeat) { 
     #if defined(SAVE_BIAS) && SAVE_BIAS
         #if ESP8266
@@ -85,16 +58,24 @@ void ICM20948Sensor::save_bias(bool repeat) {
 
             EEPROM.begin(4096); // max memory usage = 4096
             EEPROM.get(addr + 100, count); // 1st imu counter in EEPROM addr: 0x69+100=205, 2nd addr: 0x68+100=204
-            Serial.printf("[0x%02X] EEPROM position: %d, count: %d \n", addr, addr + 100, count);
+
+#ifdef FULL_DEBUG
+            m_Logger.trace("[0x%02X] EEPROM position: %d, count: %d", addr, addr + 100, count);
+#endif
+
             if(count < 0 || count > 42) {
                 count = sensorId; // 1st imu counter is even number, 2nd is odd
             } else if(repeat) {
                 count++;
             }
             EEPROM.put(addr + 100, count);
-            Serial.printf("[0x%02X] bias gyro  save(%d): [%d, %d, %d] \n", addr, count * 12, bias_g[0], bias_g[1], bias_g[2]);
-            Serial.printf("[0x%02X] bias accel save(%d): [%d, %d, %d] \n", addr, count * 12, bias_a[0], bias_a[1], bias_a[2]);
-            Serial.printf("[0x%02X] bias CPass save(%d): [%d, %d, %d] \n\n", addr, count * 12, bias_m[0], bias_m[1], bias_m[2]);
+
+#ifdef FULL_DEBUG
+            m_Logger.trace("[0x%02X] bias gyro  save(%d): [%d, %d, %d]", addr, count * 12, bias_g[0], bias_g[1], bias_g[2]);
+            m_Logger.trace("[0x%02X] bias accel save(%d): [%d, %d, %d]", addr, count * 12, bias_a[0], bias_a[1], bias_a[2]);
+            m_Logger.trace("[0x%02X] bias CPass save(%d): [%d, %d, %d]", addr, count * 12, bias_m[0], bias_m[1], bias_m[2]);
+#endif
+
             if (gyro_set) {
                 EEPROM.put(1024 + (count * 12), bias_g); // 1024 ~ 2008
             }
@@ -132,57 +113,44 @@ void ICM20948Sensor::save_bias(bool repeat) {
             bool gyro_set = bias_g[0] && bias_g[1] && bias_g[2];
             bool mag_set = bias_m[0] && bias_m[1] && bias_m[2];
                 
-            #ifdef FULL_DEBUG
-            Serial.println("bias gyro result:");
-            Serial.println(bias_g[0]); 
-            Serial.println(bias_g[1]);
-            Serial.println(bias_g[2]);
-            Serial.println("end gyro");  
-            
-            Serial.println("bias accel result:");  
-            Serial.println(bias_a[0]); 
-            Serial.println(bias_a[1]);
-            Serial.println(bias_a[2]);
-            Serial.println("end accel");   
-            
-            Serial.println("bias mag result:");
-            Serial.println(bias_m[0]); 
-            Serial.println(bias_m[1]);
-            Serial.println(bias_m[2]);
-            Serial.println("end mag"); 
-            #endif
+#ifdef FULL_DEBUG
+            m_Logger.trace("bias gyro result: %d, %d, %d", bias_g[0], bias_g[1], bias_g[2]);
+            m_Logger.trace("bias accel result: %d, %d, %d", bias_a[0], bias_a[1], bias_a[2]);
+            m_Logger.trace("bias mag result: %d, %d, %d", bias_m[0], bias_m[1], bias_m[2]);
+#endif
+
             bool auxiliary = sensorId == 1;
             if (accel_set) {
-            // Save accel
-            prefs.putInt(auxiliary ? "ba01" : "ba00", bias_a[0]);
-            prefs.putInt(auxiliary ? "ba11" : "ba10", bias_a[1]);
-            prefs.putInt(auxiliary ? "ba21" : "ba20", bias_a[2]);
+                // Save accel
+                prefs.putInt(auxiliary ? "ba01" : "ba00", bias_a[0]);
+                prefs.putInt(auxiliary ? "ba11" : "ba10", bias_a[1]);
+                prefs.putInt(auxiliary ? "ba21" : "ba20", bias_a[2]);
 
-            #ifdef FULL_DEBUG
-                    Serial.println("Wrote Accel Bias");
-            #endif
+#ifdef FULL_DEBUG
+                m_Logger.trace("Wrote Accel Bias");
+#endif
             }
             
             if (gyro_set) {
-            // Save gyro
-            prefs.putInt(auxiliary ? "bg01" : "bg00", bias_g[0]);
-            prefs.putInt(auxiliary ? "bg11" : "bg10", bias_g[1]);
-            prefs.putInt(auxiliary ? "bg21" : "bg20", bias_g[2]);
+                // Save gyro
+                prefs.putInt(auxiliary ? "bg01" : "bg00", bias_g[0]);
+                prefs.putInt(auxiliary ? "bg11" : "bg10", bias_g[1]);
+                prefs.putInt(auxiliary ? "bg21" : "bg20", bias_g[2]);
 
-            #ifdef FULL_DEBUG
-                Serial.println("Wrote Gyro Bias");
-            #endif
+#ifdef FULL_DEBUG
+                m_Logger.trace("Wrote Gyro Bias");
+#endif
             }
 
             if (mag_set) {
-            // Save mag
-            prefs.putInt(auxiliary ? "bm01" : "bm00", bias_m[0]);
-            prefs.putInt(auxiliary ? "bm11" : "bm10", bias_m[1]);
-            prefs.putInt(auxiliary ? "bm21" : "bm20", bias_m[2]);
+                // Save mag
+                prefs.putInt(auxiliary ? "bm01" : "bm00", bias_m[0]);
+                prefs.putInt(auxiliary ? "bm11" : "bm10", bias_m[1]);
+                prefs.putInt(auxiliary ? "bm21" : "bm20", bias_m[2]);
 
-            #ifdef FULL_DEBUG
-                Serial.println("Wrote Mag Bias");
-            #endif
+#ifdef FULL_DEBUG
+                m_Logger.trace("Wrote Mag Bias");
+#endif
             }    
         #endif  
 
@@ -205,66 +173,59 @@ void ICM20948Sensor::motionSetup() {
         imu.enableDebugging(Serial);
     #endif
     // SparkFun_ICM-20948_ArduinoLibrary only supports 0x68 or 0x69 via boolean, if something else throw a error
-    // boolean tracker = false;
+    boolean tracker = false;
     
-    // if (addr == 0x68) {
-    //      tracker = false;
-    // } else if (addr == 0x69)
-    // {
-    //     tracker = true;
-    // } else {
-    //     Serial.print("[ERR] IMU ICM20948: I2C Address not supportet by ICM20948 library: ");
-    //     Serial.println(addr, HEX);
-    //     return;
-    // }
-
-    ICM_20948_Status_e imu_err = imu.begin(Wire, (uint8_t) (addr % 2));
+    if (addr == 0x68) {
+        tracker = false;
+    } else if (addr == 0x69)
+    {
+        tracker = true;
+    } else {
+        m_Logger.fatal("I2C Address not supported by ICM20948 library: 0x%02x", addr);
+        return;
+    }
+    //m_Logger.debug("Start Init with addr = %s", tracker ? "true" : "false");
+    ICM_20948_Status_e imu_err = imu.begin(Wire, tracker);
     if (imu_err != ICM_20948_Stat_Ok) {
-        Serial.print("[ERR] IMU ICM20948: Can't connect to ");
-        Serial.print(addr, HEX);
-        Serial.print("  Error Code: ");
-        Serial.println(imu_err, HEX);
+        m_Logger.fatal("Can't connect to ICM20948 at address 0x%02x, error code: 0x%02x", addr, imu_err);
         LEDManager::signalAssert();
         return;
     }
 
     // Configure imu setup and load any stored bias values
-    // poss_addresses[0] = addr;
-    // i2c_scan();
-    // Serial.println("Scan completed");
     if(imu.initializeDMP() == ICM_20948_Stat_Ok)
     {
-        Serial.print("DMP initialized");
+        m_Logger.debug("DMP initialized");
     }
     else
     {
-        Serial.print("[ERR] DMP Failed to initialize");
+       m_Logger.fatal("Failed to initialize DMP");
         return;
     }
 
     if (USE_6_AXIS)
     {
-        Serial.printf("[0x%02X] use 6-axis...\n", addr);
+        m_Logger.debug("Using 6 axis configuration");
         if(imu.enableDMPSensor(INV_ICM20948_SENSOR_GAME_ROTATION_VECTOR) == ICM_20948_Stat_Ok)
         {
-            Serial.print("Enabled DMP Senor for Game Rotation Vector");
+            m_Logger.debug("Enabled DMP sensor for game rotation vector");
         }
         else
         {
-            Serial.println("[ERR] Enabling DMP Senor for Game Rotation Vector Failed");
+            m_Logger.fatal("Failed to enable DMP sensor for game rotation vector");
             return; 
         }
     }
     else
     {
-        Serial.printf("[0x%02X] use 9-axis...\n", addr);
+        m_Logger.debug("Using 9 axis configuration");
         if(imu.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION) == ICM_20948_Stat_Ok)
         {
-            Serial.print("Enabled DMP Senor for Sensor Orientation");
+            m_Logger.debug("Enabled DMP sensor for sensor orientation");
         }
         else
         {
-            Serial.print("[ERR] Enabling DMP Senor Orientation Failed");
+            m_Logger.fatal("Failed to enable DMP sensor orientation");
             return; 
         }
     }
@@ -275,25 +236,25 @@ void ICM20948Sensor::motionSetup() {
 
     if (USE_6_AXIS)
     {
-        if(imu.setDMPODRrate(DMP_ODR_Reg_Quat6, 0) == ICM_20948_Stat_Ok)
+        if(imu.setDMPODRrate(DMP_ODR_Reg_Quat6, 1.25) == ICM_20948_Stat_Ok)
         {
-            Serial.print("Set Quat6 to Max frequency");
+            m_Logger.debug("Set Quat6 to 100Hz frequency");
         }
         else
         {
-            Serial.print("[ERR] Failed to Set Quat6 to Max frequency");
+           m_Logger.fatal("Failed to set Quat6 to 100Hz frequency");
             return;
         }
     }
     else
     {
-        if(imu.setDMPODRrate(DMP_ODR_Reg_Quat9, 0) == ICM_20948_Stat_Ok)
+        if(imu.setDMPODRrate(DMP_ODR_Reg_Quat9, 1.25) == ICM_20948_Stat_Ok)
         {
-            Serial.print("Set Quat9 to Max frequency");
+            m_Logger.debug("Set Quat9 to 100Hz frequency");
         }
         else
         {
-            Serial.print("[ERR] Failed to Set Quat9 to Max frequency");
+           m_Logger.fatal("Failed to set Quat9 to 100Hz frequency");
             return;
         }
     }
@@ -301,44 +262,44 @@ void ICM20948Sensor::motionSetup() {
     // Enable the FIFO
     if(imu.enableFIFO() == ICM_20948_Stat_Ok)
     {
-        Serial.print("FIFO Enabled");
+        m_Logger.debug("FIFO Enabled");
     }
     else
     {
-        Serial.print("[ERR] FIFO Enabling Failed");
+       m_Logger.fatal("Failed to enable FIFO");
         return;
     }
 
     // Enable the DMP
     if(imu.enableDMP() == ICM_20948_Stat_Ok)
     {
-        Serial.print("DMP Enabled");
+        m_Logger.debug("DMP Enabled");
     }
     else
     {
-        Serial.print("[ERR] DMP Enabling Failed");
+       m_Logger.fatal("Failed to enable DMP");
         return;
     }
 
     // Reset DMP
     if(imu.resetDMP() == ICM_20948_Stat_Ok)
     {
-        Serial.print("Reset DMP");
+        m_Logger.debug("Reset DMP");
     }
     else
     {
-        Serial.print("[ERR] Failed to reset DMP");
+       m_Logger.fatal("Failed to reset DMP");
         return;
     }
 
     // Reset FIFO
     if(imu.resetFIFO() == ICM_20948_Stat_Ok)
     {
-        Serial.print("Reset FIFO");
+        m_Logger.debug("Reset FIFO");
     }
     else
     {
-        Serial.print("[ERR] Failed to reset FIFO");
+       m_Logger.fatal("Failed to reset FIFO");
         return;
     }
 
@@ -348,7 +309,11 @@ void ICM20948Sensor::motionSetup() {
         count = 0;
         EEPROM.begin(4096); // max memory usage = 4096
         EEPROM.get(addr + 100, count); // 1st imu counter in EEPROM addr: 0x69+100=205, 2nd addr: 0x68+100=204
-        Serial.printf("[0x%02X] EEPROM position: %d, count: %d \n", addr, addr + 100, count);
+
+#ifdef FULL_DEBUG
+        m_Logger.trace("[0x%02X] EEPROM position: %d, count: %d", addr, addr + 100, count);
+#endif
+
         if(count < 0 || count > 42) {
             count = sensorId; // 1st imu counter is even number, 2nd is odd
             EEPROM.put(addr + 100, count);
@@ -357,9 +322,12 @@ void ICM20948Sensor::motionSetup() {
         EEPROM.get(2046 + (count * 12), bias_a); // 2046 ~ 3030
         EEPROM.get(3072 + (count * 12), bias_m); // 3072 ~ 4056
         EEPROM.end();
-        Serial.printf("[0x%02X] EEPROM gyro  get(%d): [%d, %d, %d] \n", addr, count * 12, bias_g[0], bias_g[1], bias_g[2]);
-        Serial.printf("[0x%02X] EEPROM accel get(%d): [%d, %d, %d] \n", addr, count * 12, bias_a[0], bias_a[1], bias_a[2]);
-        Serial.printf("[0x%02X] EEPROM CPass get(%d): [%d, %d, %d] \n\n", addr, count * 12, bias_m[0], bias_m[1], bias_m[2]);
+
+#ifdef FULL_DEBUG
+        m_Logger.trace("[0x%02X] EEPROM gyro  get(%d): [%d, %d, %d]", addr, count * 12, bias_g[0], bias_g[1], bias_g[2]);
+        m_Logger.trace("[0x%02X] EEPROM accel get(%d): [%d, %d, %d]", addr, count * 12, bias_a[0], bias_a[1], bias_a[2]);
+        m_Logger.trace("[0x%02X] EEPROM CPass get(%d): [%d, %d, %d]", addr, count * 12, bias_m[0], bias_m[1], bias_m[2]);
+#endif
 
         imu.SetBiasGyroX(bias_g[0]);
         imu.SetBiasGyroY(bias_g[1]);
@@ -389,24 +357,11 @@ void ICM20948Sensor::motionSetup() {
             imu.GetBiasCPassY(&bias_m[1]);
             imu.GetBiasCPassZ(&bias_m[2]);
 
-            Serial.print("Starting Gyro Bias is ");
-            Serial.print(bias_g[0]);
-            Serial.print(",");
-            Serial.print(bias_g[1]);
-            Serial.print(",");
-            Serial.println(bias_g[2]);
-            Serial.print("Starting Accel Bias is ");
-            Serial.print(bias_a[0]);
-            Serial.print(",");
-            Serial.print(bias_a[1]);
-            Serial.print(",");
-            Serial.println(bias_a[2]);
-            Serial.print("Starting CPass Bias is ");
-            Serial.print(bias_m[0]);
-            Serial.print(",");
-            Serial.print(bias_m[1]);
-            Serial.print(",");
-            Serial.println(bias_m[2]);
+#ifdef FULL_DEBUG
+            m_Logger.trace("Starting Gyro Bias is %d, %d, %d", bias_g[0], bias_g[1], bias_g[2]);
+            m_Logger.trace("Starting Accel Bias is %d, %d, %d", bias_a[0], bias_a[1], bias_a[2]);
+            m_Logger.trace("Starting CPass Bias is %d, %d, %d", bias_m[0], bias_m[1], bias_m[2]);
+#endif
 
             //Sets all bias to 90
             bias_g[0] = 90;
@@ -456,26 +411,13 @@ void ICM20948Sensor::motionSetup() {
             imu.GetBiasCPassY(&bias_m[1]);
             imu.GetBiasCPassZ(&bias_m[2]);
 
-            Serial.println("All set bias should be 90");
+#ifdef FULL_DEBUG
+            m_Logger.trace("All set bias should be 90");
 
-            Serial.print("Set Gyro Bias is ");
-            Serial.print(bias_g[0]);
-            Serial.print(",");
-            Serial.print(bias_g[1]);
-            Serial.print(",");
-            Serial.println(bias_g[2]);
-            Serial.print("Set Accel Bias is ");
-            Serial.print(bias_a[0]);
-            Serial.print(",");
-            Serial.print(bias_a[1]);
-            Serial.print(",");
-            Serial.println(bias_a[2]);
-            Serial.print("Set CPass Bias is ");
-            Serial.print(bias_m[0]);
-            Serial.print(",");
-            Serial.print(bias_m[1]);
-            Serial.print(",");
-            Serial.println(bias_m[2]);
+            m_Logger.trace("Set Gyro Bias is %d, %d, %d", bias_g[0], bias_g[1], bias_g[2]);
+            m_Logger.trace("Set Accel Bias is %d, %d, %d", bias_a[0], bias_a[1], bias_a[2]);
+            m_Logger.trace("Set CPass Bias is %d, %d, %d", bias_m[0], bias_m[1], bias_m[2]);
+#endif
         }
     #endif
 
@@ -489,60 +431,108 @@ void ICM20948Sensor::motionSetup() {
 
 
 void ICM20948Sensor::motionLoop() {
+#if ENABLE_INSPECTION
+    {
+        (void)imu.getAGMT();
+
+        float rX = imu.gyrX();
+        float rY = imu.gyrY();
+        float rZ = imu.gyrZ();
+
+        float aX = imu.accX();
+        float aY = imu.accY();
+        float aZ = imu.accZ();
+
+        float mX = imu.magX();
+        float mY = imu.magY();
+        float mZ = imu.magZ();
+
+        Network::sendInspectionRawIMUData(sensorId, rX, rY, rZ, 255, aX, aY, aZ, 255, mX, mY, mZ, 255);
+    }
+#endif
+
     timer.tick();
 
-    ICM_20948_Status_e readStatus = imu.readDMPdataFromFIFO(&dmpData);
-    if(readStatus == ICM_20948_Stat_FIFOMoreDataAvail || readStatus == ICM_20948_Stat_Ok)
-    {
-        if(USE_6_AXIS)
+    bool dataavaliable = true;
+    while (dataavaliable) {
+        ICM_20948_Status_e readStatus = imu.readDMPdataFromFIFO(&dmpData);
+        if(readStatus == ICM_20948_Stat_FIFOMoreDataAvail || readStatus == ICM_20948_Stat_Ok)
         {
-            if ((dmpData.header & DMP_header_bitmap_Quat6) > 0)
+            if(USE_6_AXIS)
             {
-                // Q0 value is computed from this equation: Q0^2 + Q1^2 + Q2^2 + Q3^2 = 1.
-                // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias values.
-                // The quaternion data is scaled by 2^30.
-                // Scale to +/- 1
-                double q1 = ((double)dmpData.Quat6.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30
-                double q2 = ((double)dmpData.Quat6.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30
-                double q3 = ((double)dmpData.Quat6.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30
-                double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));
-                quaternion.w = q0;
-                quaternion.x = q1;
-                quaternion.y = q2;
-                quaternion.z = q3;
-                quaternion *= sensorOffset; //imu rotation
-                newData = true;
+                if ((dmpData.header & DMP_header_bitmap_Quat6) > 0)
+                {
+                    // Q0 value is computed from this equation: Q0^2 + Q1^2 + Q2^2 + Q3^2 = 1.
+                    // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias values.
+                    // The quaternion data is scaled by 2^30.
+                    // Scale to +/- 1
+                    double q1 = ((double)dmpData.Quat6.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30
+                    double q2 = ((double)dmpData.Quat6.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30
+                    double q3 = ((double)dmpData.Quat6.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30
+                    double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));
+                    quaternion.w = q0;
+                    quaternion.x = q1;
+                    quaternion.y = q2;
+                    quaternion.z = q3;
+                    quaternion *= sensorOffset; //imu rotation
+
+#if ENABLE_INSPECTION
+                    {
+                        Network::sendInspectionFusedIMUData(sensorId, quaternion);
+                    }
+#endif
+
+                    newData = true;
+                    lastData = millis();
+                }
+            }
+            else
+            {
+                if((dmpData.header & DMP_header_bitmap_Quat9) > 0)
+                {
+                    // Q0 value is computed from this equation: Q0^2 + Q1^2 + Q2^2 + Q3^2 = 1.
+                    // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias values.
+                    // The quaternion data is scaled by 2^30.
+                    // Scale to +/- 1
+                    double q1 = ((double)dmpData.Quat9.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30
+                    double q2 = ((double)dmpData.Quat9.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30
+                    double q3 = ((double)dmpData.Quat9.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30
+                    double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));
+                    quaternion.w = q0;
+                    quaternion.x = q1;
+                    quaternion.y = q2;
+                    quaternion.z = q3;
+                    quaternion *= sensorOffset; //imu rotation
+
+#if ENABLE_INSPECTION
+                    {
+                        Network::sendInspectionFusedIMUData(sensorId, quaternion);
+                    }
+#endif
+
+                    newData = true;
+                    lastData = millis();
+                }
             }
         }
-        else
+        else 
         {
-            if((dmpData.header & DMP_header_bitmap_Quat9) > 0)
+            if (readStatus == ICM_20948_Stat_FIFONoDataAvail || lastData + 1000 < millis()) 
             {
-                // Q0 value is computed from this equation: Q0^2 + Q1^2 + Q2^2 + Q3^2 = 1.
-                // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias values.
-                // The quaternion data is scaled by 2^30.
-                // Scale to +/- 1
-                double q1 = ((double)dmpData.Quat9.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30
-                double q2 = ((double)dmpData.Quat9.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30
-                double q3 = ((double)dmpData.Quat9.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30
-                double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));
-                quaternion.w = q0;
-                quaternion.x = q1;
-                quaternion.y = q2;
-                quaternion.z = q3;
-                quaternion *= sensorOffset; //imu rotation
-                newData = true;
+                dataavaliable = false;
             }
+#ifdef FULL_DEBUG
+            else 
+            {
+                m_Logger.trace("e0x%02x", readStatus);
+            }
+#endif
         }
-        lastReset = -1;
-        lastData = millis();
     }
-    
     if(lastData + 1000 < millis()) {
         working = false;
-        lastData = millis();        
-        Serial.print("[ERR] Sensor timeout ");
-        Serial.println(addr);
+        lastData = millis();  
+        m_Logger.error("Sensor timeout I2C Address 0x%02x", addr);
         Network::sendError(1, this->sensorId);
     }
 }
@@ -572,7 +562,7 @@ void ICM20948Sensor::startCalibration(int calibrationType) {
     #endif
 }
 
-//You need to override the libary's initializeDMP to change some settings 
+//You need to override the library's initializeDMP to change some settings 
 #if OVERRIDEDMPSETUP
 // initializeDMP is a weak function. Let's overwrite it so we can increase the sample rate
 ICM_20948_Status_e ICM_20948::initializeDMP(void)
