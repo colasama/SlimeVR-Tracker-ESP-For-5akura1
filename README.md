@@ -1,3 +1,6 @@
+## About my modification
+Enables this firmware to work directly with XYZ axis aligned SlimeVR trackers with MPU6500/6050 attached magnetometer, For reference you can use [this PCB](https://github.com/tianrui233/SlimeVR-PCB-KitKat)
+
 # SlimeVR Tracker firmware for ESP
 
 Firmware for ESP8266 / ESP32 microcontrollers and different IMU sensors to use them as a vive-like trackers in VR.
