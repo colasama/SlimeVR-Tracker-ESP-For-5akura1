@@ -28,7 +28,7 @@
 // TODO: New implementation: https://github.com/SlimeVR/SlimeVR-Tracker-ESP/issues/71
 
 // TODO: Cleanup with proper classes
-SlimeVR::Logging::Logger wifiProvisioningLogger("WiFiProvisioning");
+SlimeVR::Logging::Logger wifiProvisioningLogger("WiFi配置");
 bool provisioning = false;
 
 void WiFiNetwork::upkeepProvisioning() {
@@ -38,7 +38,7 @@ void WiFiNetwork::upkeepProvisioning() {
 void WiFiNetwork::startProvisioning() {
     if(WiFi.beginSmartConfig()) {
         provisioning = true;
-        wifiProvisioningLogger.info("SmartConfig started");
+        wifiProvisioningLogger.info("智能配置已启动");
     }
 }
 

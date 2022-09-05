@@ -58,7 +58,7 @@ namespace SlimeVR
                 }
                 else
                 {
-                    m_Logger.trace("Primary IMU found at address 0x%02X", firstIMUAddress);
+                    m_Logger.trace("已在 0x%02X 找到主惯性传感器", firstIMUAddress);
 
 #if IMU == IMU_BNO080 || IMU == IMU_BNO085 || IMU == IMU_BNO086
                     m_Sensor1 = new BNO080Sensor(0, IMU, firstIMUAddress, IMU_ROTATION, PIN_IMU_INT);
@@ -91,7 +91,7 @@ namespace SlimeVR
 
                 if (secondIMUAddress == firstIMUAddress)
                 {
-                    m_Logger.debug("No secondary IMU connected");
+                    m_Logger.debug("副惯性传感器未连接");
                 }
                 else if (secondIMUAddress == 0)
                 {
@@ -99,7 +99,7 @@ namespace SlimeVR
                 }
                 else
                 {
-                    m_Logger.trace("Secondary IMU found at address 0x%02X", secondIMUAddress);
+                    m_Logger.trace("已在 0x%02X 找到副惯性传感器", secondIMUAddress);
 
 #if SECOND_IMU == IMU_BNO080 || SECOND_IMU == IMU_BNO085 || SECOND_IMU == IMU_BNO086
                     m_Sensor2 = new BNO080Sensor(1, IMU, secondIMUAddress, SECOND_IMU_ROTATION, PIN_IMU_INT_2);

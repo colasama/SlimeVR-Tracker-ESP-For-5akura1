@@ -50,7 +50,7 @@ size_t serialLength = 0;
 unsigned char buf[8];
 
 // TODO: Cleanup with proper classes
-SlimeVR::Logging::Logger udpClientLogger("UDPClient");
+SlimeVR::Logging::Logger udpClientLogger("UDP客户端");
 
 template <typename T>
 unsigned char * convert_to_chars(T src, unsigned char * target)
@@ -593,7 +593,7 @@ void ServerConnection::connect()
                 connected = true;
                 statusManager.setStatus(SlimeVR::Status::SERVER_CONNECTING, false);
                 ledManager.off();
-                udpClientLogger.debug("Handshake successful, server is %s:%d", Udp.remoteIP().toString().c_str(), + Udp.remotePort());
+                udpClientLogger.debug("握手成功！服务器地址为：%s:%d", Udp.remoteIP().toString().c_str(), + Udp.remotePort());
                 return;
             default:
             continue;
@@ -607,7 +607,7 @@ void ServerConnection::connect()
     if(lastConnectionAttemptMs + 1000 < now)
     {
         lastConnectionAttemptMs = now;
-        udpClientLogger.info("Looking for the server...");
+        udpClientLogger.info("寻找服务器连接...");
         Network::sendHandshake();
         ledManager.on();
     }
@@ -648,7 +648,7 @@ void ServerConnection::update(Sensor * const sensor, Sensor * const sensor2) {
                 break;
             case PACKET_RECEIVE_HANDSHAKE:
                 // Assume handshake successful
-                udpClientLogger.warn("Handshake received again, ignoring");
+                udpClientLogger.warn("再次收到握手，忽略");
                 break;
             case PACKET_RECEIVE_COMMAND:
                 
@@ -661,7 +661,7 @@ void ServerConnection::update(Sensor * const sensor, Sensor * const sensor2) {
                 break;
             case PACKET_SENSOR_INFO:
                 if(len < 6) {
-                    udpClientLogger.warn("Wrong sensor info packet");
+                    udpClientLogger.warn("错误的传感器信息包");
                     break;
                 }
                 if(incomingPacket[4] == 0) {
@@ -683,7 +683,7 @@ void ServerConnection::update(Sensor * const sensor, Sensor * const sensor2) {
             connected = false;
             sensorStateNotified1 = false;
             sensorStateNotified2 = false;
-            udpClientLogger.warn("Connection to server timed out");
+            udpClientLogger.warn("服务器连接超时");
         }
     }
         

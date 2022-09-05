@@ -96,7 +96,7 @@ namespace SlimeVR
 
         uint8_t m_Pin;
 
-        Logging::Logger m_Logger = Logging::Logger("LEDManager");
+        Logging::Logger m_Logger = Logging::Logger("LED管理器");
     };
 }
 

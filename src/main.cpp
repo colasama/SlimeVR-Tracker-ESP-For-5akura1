@@ -55,7 +55,7 @@ void setup()
     Serial.println();
     Serial.println();
 
-    logger.info("SlimeVR v" FIRMWARE_VERSION " starting up...");
+    logger.info("SlimeVR v" FIRMWARE_VERSION " 启动中...");
 
     //wifi_set_sleep_type(NONE_SLEEP_T);
 

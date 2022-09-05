@@ -9,19 +9,19 @@ namespace SlimeVR
       switch (level)
       {
       case TRACE:
-        return "TRACE";
+        return "追踪";
       case DEBUG:
-        return "DEBUG";
+        return "调试";
       case INFO:
-        return "INFO";
+        return "信息";
       case WARN:
-        return "WARN";
+        return "警告";
       case ERROR:
-        return "ERROR";
+        return "错误";
       case FATAL:
-        return "FATAL";
+        return "致命";
       default:
-        return "UNKNOWN";
+        return "未知";
       }
     }
   }

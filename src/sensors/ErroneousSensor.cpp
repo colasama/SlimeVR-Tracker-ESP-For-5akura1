@@ -31,7 +31,7 @@ namespace SlimeVR
     {
         void ErroneousSensor::motionSetup()
         {
-            m_Logger.error("IMU of type %s failed to initialize", getIMUNameByType(m_ExpectedType));
+            m_Logger.error("无法初始化%s", getIMUNameByType(m_ExpectedType));
         }
 
         uint8_t ErroneousSensor::getSensorState()

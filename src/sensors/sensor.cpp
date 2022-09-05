@@ -35,7 +35,7 @@ void Sensor::sendData() {
         Network::sendRotationData(&quaternion, DATA_TYPE_NORMAL, calibrationAccuracy, sensorId);
 
 #ifdef DEBUG_SENSOR
-        m_Logger.trace("Quaternion: %f, %f, %f, %f", UNPACK_QUATERNION(quaternion));
+        m_Logger.trace("四元数：%f, %f, %f, %f", UNPACK_QUATERNION(quaternion));
 #endif
     }
 }
@@ -43,7 +43,7 @@ void Sensor::sendData() {
 const char * getIMUNameByType(int imuType) {
     switch(imuType) {
         case IMU_MPU9250:
-            return "MPU9250";
+            return "磁力计混合方案";
         case IMU_MPU6500:
             return "MPU6500";
         case IMU_BNO080:
@@ -61,5 +61,5 @@ const char * getIMUNameByType(int imuType) {
         case IMU_ICM20948:
             return "ICM20948";
     }
-    return "Unknown";
+    return "未知";
 }

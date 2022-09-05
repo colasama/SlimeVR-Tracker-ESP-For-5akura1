@@ -54,28 +54,28 @@ namespace SlimeVR {
             }
 
             if (LittleFS.exists("/config.bin")) {
-                m_Logger.trace("Found configuration file");
+                m_Logger.trace("找到配置文件");
 
                 File file = LittleFS.open("/config.bin", "r");
 
                 file.read((uint8_t*)&m_Config.version, sizeof(int32_t));
 
                 if (m_Config.version < CURRENT_CONFIGURATION_VERSION) {
-                    m_Logger.debug("Configuration is outdated: v%d < v%d", m_Config.version, CURRENT_CONFIGURATION_VERSION);
+                    m_Logger.debug("配置文件已过期：当前“v%d”<最新刷入的“v%d”", m_Config.version, CURRENT_CONFIGURATION_VERSION);
 
                     if (!runMigrations(m_Config.version)) {
-                        m_Logger.error("Failed to migrate configuration from v%d to v%d", m_Config.version, CURRENT_CONFIGURATION_VERSION);
+                        m_Logger.error("无法从当前“v%d”<转换到最新的“v%d”", m_Config.version, CURRENT_CONFIGURATION_VERSION);
                         return;
                     }
                 } else {
-                    m_Logger.info("Found up-to-date configuration v%d", m_Config.version);
+                    m_Logger.info("找到最新的配置：v%d", m_Config.version);
                 }
 
                 file.seek(0);
                 file.read((uint8_t*)&m_Config, sizeof(DeviceConfig));
                 file.close();
             } else {
-                m_Logger.info("No configuration file found, creating new one");
+                m_Logger.info("找不到配置文件，新建一个");
                 m_Config.version = CURRENT_CONFIGURATION_VERSION;
                 save();
             }
@@ -84,7 +84,7 @@ namespace SlimeVR {
 
             m_Loaded = true;
 
-            m_Logger.info("Loaded configuration");
+            m_Logger.info("加载配置");
 
 #ifdef DEBUG_CONFIGURATION
             print();

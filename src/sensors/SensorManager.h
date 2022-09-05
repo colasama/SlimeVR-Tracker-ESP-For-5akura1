@@ -37,7 +37,7 @@ namespace SlimeVR
         {
         public:
             SensorManager()
-                : m_Logger(SlimeVR::Logging::Logger("SensorManager")), m_Sensor1(new EmptySensor(0)), m_Sensor2(new EmptySensor(0)) {}
+                : m_Logger(SlimeVR::Logging::Logger("传感器管理器")), m_Sensor1(new EmptySensor(0)), m_Sensor2(new EmptySensor(0)) {}
             ~SensorManager()
             {
                 delete m_Sensor1;

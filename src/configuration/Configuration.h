@@ -55,7 +55,7 @@ namespace SlimeVR {
             DeviceConfig m_Config{};
             std::vector<CalibrationConfig> m_Calibrations;
 
-            Logging::Logger m_Logger = Logging::Logger("Configuration");
+            Logging::Logger m_Logger = Logging::Logger("配置");
 
             static CalibrationConfig m_EmptyCalibration;
         };

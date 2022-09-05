@@ -30,7 +30,7 @@
 #define SECOND_IMU IMU_MPU9250
 #define BOARD BOARD_NODEMCU
 #define IMU_ROTATION DEG_180
-#define SECOND_IMU_ROTATION DEG_270
+#define SECOND_IMU_ROTATION DEG_90
 
 // Battery monitoring options (comment to disable):
 //   BAT_EXTERNAL for ADC pin, 
@@ -78,7 +78,7 @@
   #define LED_INVERTED true
 #elif BOARD == BOARD_NODEMCU || BOARD == BOARD_WEMOSD1MINI
   #define PIN_IMU_SDA D2
-  #define PIN_IMU_SCL D1
+  #define PIN_IMU_SCL D1 //燐桦PCB改成D3
   #define PIN_IMU_INT D5
   #define PIN_IMU_INT_2 D6
   #define PIN_BATTERY_LEVEL A0

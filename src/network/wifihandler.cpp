@@ -63,13 +63,13 @@ IPAddress WiFiNetwork::getAddress() {
 }
 
 void WiFiNetwork::setUp() {
-    wifiHandlerLogger.info("Setting up WiFi");
+    wifiHandlerLogger.info("设置WiFi");
     WiFi.persistent(true);
     WiFi.mode(WIFI_STA);
     WiFi.hostname("SlimeVR FBT Tracker");
-    wifiHandlerLogger.info("Loaded credentials for SSID %s and pass length %d", WiFi.SSID().c_str(), WiFi.psk().length());
+    wifiHandlerLogger.info("为“%s”加载凭据，密码长度为：%d", WiFi.SSID().c_str(), WiFi.psk().length());
     wl_status_t status = WiFi.begin(); // Should connect to last used access point, see https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/station-class.html#begin
-    wifiHandlerLogger.debug("Status: %d", status);
+    wifiHandlerLogger.debug("状态：%d", status);
     wifiState = 1;
     wifiConnectionTimeout = millis();
     
@@ -99,7 +99,7 @@ void WiFiNetwork::setUp() {
     }
     else
     {
-        wifiHandlerLogger.error("Unable to get WiFi config, power saving not enabled!");
+        wifiHandlerLogger.error("无法获取 WiFi 配置，未启用省电功能！");
     }
 #endif
 #endif
@@ -110,14 +110,14 @@ void onConnected() {
     statusManager.setStatus(SlimeVR::Status::WIFI_CONNECTING, false);
     isWifiConnected = true;
     hadWifi = true;
-    wifiHandlerLogger.info("Connected successfully to SSID '%s', ip address %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+    wifiHandlerLogger.info("成功连接到“%s”，IP地址为：%s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
 void WiFiNetwork::upkeep() {
     upkeepProvisioning();
     if(WiFi.status() != WL_CONNECTED) {
         if(isWifiConnected) {
-            wifiHandlerLogger.warn("Connection to WiFi lost, reconnecting...");
+            wifiHandlerLogger.warn("已丢失WiFI连接，尝试重连中...");
             isWifiConnected = false;
         }
         statusManager.setStatus(SlimeVR::Status::WIFI_CONNECTING, true);
@@ -131,8 +131,8 @@ void WiFiNetwork::upkeep() {
                         // Try hardcoded credentials now
                         WiFi.begin(WIFI_CREDS_SSID, WIFI_CREDS_PASSWD);
                         wifiConnectionTimeout = millis();
-                        wifiHandlerLogger.error("Can't connect from saved credentials, status: %d.", WiFi.status());
-                        wifiHandlerLogger.debug("Trying hardcoded credentials...");
+                        wifiHandlerLogger.error("无法从保存的凭据连接，状态：%d。", WiFi.status());
+                        wifiHandlerLogger.debug("尝试从硬件获取...");
                     #endif
                     wifiState = 2;
                 return;
@@ -140,7 +140,7 @@ void WiFiNetwork::upkeep() {
                     // Start smart config
                     if(!hadWifi && !WiFi.smartConfigDone() && wifiConnectionTimeout + 11000 < millis()) {
                         if(WiFi.status() != WL_IDLE_STATUS) {
-                            wifiHandlerLogger.error("Can't connect from any credentials, status: %d.", WiFi.status());
+                            wifiHandlerLogger.error("无法从任何凭据连接，状态：%d。", WiFi.status());
                             wifiConnectionTimeout = millis();
                         }
                         startProvisioning();

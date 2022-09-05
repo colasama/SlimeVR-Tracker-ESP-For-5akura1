@@ -33,7 +33,7 @@
 #endif
 
 namespace SerialCommands {
-    SlimeVR::Logging::Logger logger("SerialCommands");
+    SlimeVR::Logging::Logger logger("串口指令");
 
     CmdCallback<5> cmdCallbacks;
     CmdParser cmdParser;
@@ -42,14 +42,14 @@ namespace SerialCommands {
     void cmdSet(CmdParser * parser) {
         if(parser->getParamCount() != 1 && parser->equalCmdParam(1, "WIFI")  ) {
             if(parser->getParamCount() < 3) {
-                logger.error("CMD SET WIFI ERROR: Too few arguments");
-                logger.info("Syntax: SET WIFI \"<SSID>\" \"<PASSWORD>\"");
+                logger.error("通过串口设置WiFi出现错误：缺少参数");
+                logger.info("设置WiFi名：\"<SSID>\" 密码：\"<PASSWORD>\"");
             } else {
                 WiFiNetwork::setWiFiCredentials(parser->getCmdParam(2), parser->getCmdParam(3));
-                logger.info("CMD SET WIFI OK: New wifi credentials set, reconnecting");
+                logger.info("通过串口设置WiFi成功：已存储新的WiFi凭据，正在重新连接");
             }
         } else {
-            logger.error("CMD SET ERROR: Unrecognized variable to set");
+            logger.error("错误：该变量无法识别");
         }
     }
 
@@ -60,7 +60,7 @@ namespace SerialCommands {
         
         if (parser->equalCmdParam(1, "INFO")) {
             logger.info(
-                "SlimeVR Tracker, board: %d, hardware: %d, build: %d, firmware: %s, address: %s",
+                "SlimeVR追踪器，主板：%d，惯性传感器：%d，构建版本：%d，固件版本：%s，IPv4地址：%s",
                 BOARD,
                 HARDWARE_MCU,
                 FIRMWARE_BUILD_NUMBER,
@@ -132,13 +132,13 @@ namespace SerialCommands {
                 nvs_flash_erase();
         #else
             #warning SERIAL COMMAND FACTORY RESET NOT SUPPORTED
-            logger.info("FACTORY RESET NOT SUPPORTED");
+            logger.info("目前还不支持使用串口指令恢复出厂设置");
             return;
         #endif
 
         #if defined(WIFI_CREDS_SSID) && defined(WIFI_CREDS_PASSWD)
             #warning FACTORY RESET does not clear your hardcoded WiFi credentials!
-            logger.warn("FACTORY RESET does not clear your hardcoded WiFi credentials!");
+            logger.warn("请注意：恢复出厂设置并不会清空你的WiFi凭据！");
         #endif
 
         delay(3000);

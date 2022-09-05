@@ -28,17 +28,17 @@ namespace SlimeVR {
         const char* calibrationConfigTypeToString(CalibrationConfigType type) {
             switch (type) {
             case NONE:
-                return "NONE";
+                return "无";
             case BMI160:
                 return "BMI160";
             case MPU6050:
                 return "MPU6050";
             case MPU9250:
-                return "MPU9250";
+                return "磁力计混合方案";
             case ICM20948:
                 return "ICM20948";
             default:
-                return "UNKNOWN";
+                return "未知";
             }
         }
     }

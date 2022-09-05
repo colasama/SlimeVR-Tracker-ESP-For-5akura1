@@ -16,10 +16,10 @@ namespace I2CSCAN
             return addr1;
         if(!I2CSCAN::isI2CExist(addr2)) {
             if(scanIfNotFound) {
-                Serial.println("[ERR] I2C: Can't find I2C device on provided addresses, scanning for all I2C devices and returning");
+                Serial.println("[错误] [I²C] 无法在固件提供的地址中找到I²C设备，尝试扫描所有I²C设备...");
                 I2CSCAN::scani2cports();
             } else {
-                Serial.println("[ERR] I2C: Can't find I2C device on provided addresses");
+                Serial.println("[错误] [I²C] 在提供的地址上找不到I²C设备");
             }
             return 0;
         }
@@ -41,7 +41,7 @@ namespace I2CSCAN
             }
         }
         if(!found) {
-            Serial.println("[ERR] I2C: No I2C devices found");
+            Serial.println("[错误] [I²C] 找不到I²C设备");
         }
     }
 
@@ -62,23 +62,24 @@ namespace I2CSCAN
 
             if (error == 0)
             {
-                Serial.print("[DBG] I2C (@ " + portMap[i] + " : " + portMap[j] + "): ");
-                Serial.print("I2C device found at address 0x");
+                Serial.print("[调试] [I²C] I²C (@ " + portMap[i] + " : " + portMap[j] + "): ");
+                Serial.print("在0x");
                 if (address < 16)
                     Serial.print("0");
                 Serial.print(address, HEX);
-                Serial.println("  !");
+                Serial.println("找到了I²C设备！");
 
                 nDevices++;
                 found = true;
             }
             else if (error == 4)
             {
-                Serial.print("[ERR] I2C (@ " + portMap[i] + " : " + portMap[j] + "): ");
-                Serial.print("Unknow error at address 0x");
+                Serial.print("[错误] [I²C] I2C (@ " + portMap[i] + " : " + portMap[j] + "): ");
+                Serial.print("在0x");
                 if (address < 16)
                     Serial.print("0");
                 Serial.println(address, HEX);
+                Serial.println("发现了未知错误");
             }
         }
         return found;
