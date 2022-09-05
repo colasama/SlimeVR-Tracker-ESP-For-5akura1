@@ -1,62 +1,64 @@
-## About my modification
-Enables this firmware to work directly with XYZ axis aligned SlimeVR trackers with MPU6500/6050 attached magnetometer, For reference you can use [this PCB](https://github.com/tianrui233/SlimeVR-PCB-KitKat)
+## 我修改了哪些内容？
+仅仅修改了XYZ的轴朝向使其可以适配任何轴对齐的外挂磁力计方案SlimeVR，并且做了汉化部分串口输出[this PCB](https://github.com/tianrui233/SlimeVR-PCB-KitKat)
 
-# SlimeVR Tracker firmware for ESP
+# 适用于ESP的SlimeVR固件
 
-Firmware for ESP8266 / ESP32 microcontrollers and different IMU sensors to use them as a vive-like trackers in VR.
+用于 ESP8266 / ESP32 微控制器和不同 IMU 传感器的固件，可将它们用作 VR 中的类似 vive 的跟踪器。
 
-Requires [SlimeVR Server](https://github.com/SlimeVR/SlimeVR-Server) to work with SteamVR and resolve pose. Should be compatible with [owoTrack](https://github.com/abb128/owo-track-driver), but is not guaranteed.
+需要[SlimeVR Server](https://github.com/SlimeVR/SlimeVR-Server)与 SteamVR 一起工作并解析姿势。 应该兼容[owoTrack](https://github.com/abb128/owo-track-driver)，但不能保证其可靠性。
 
-## Configuration
+## 配置
 
-Firmware configuration is located in the `defines.h` file. For more information on how to configure your firmware, refer to the [Configuring the firmware project section of SlimeVR documentation](https://docs.slimevr.dev/firmware/configuring-project.html).
+固件配置位于 `defines.h` 文件中。 有关如何配置固件的更多信息，请参阅 [配置 SlimeVR 文档的固件项目部分](https://docs.slimevr.dev/firmware/configuring-project.html)。  
 
-## Compatibility
+## 兼容性
 
-The following IMUs and their corresponding `IMU` values are supported by the firmware:
+固件支持以下 IMU 及其对应的“IMU”值：
 * BNO085 & BNO086 (IMU_BNO085)
-  * Using any fusion in internal DMP. Best results with ARVR Stabilized Game Rotation Vector or ARVR Stabilized Rotation Vector if in good magnetic environment.
+  * 在内部 DMP 中使用任何融合。如果在良好的磁场环境中，使用 ARVR Stabilized Game Rotation Vector 或 ARVR Stabilized Rotation Vector 可获得最佳结果。
 * BNO080 (IMU_BNO080)
-  * Using any fusion in internal DMP. Doesn't have BNO085's ARVR stabilization, but still gives good results.
+  * 在内部 DMP 中使用任何融合。没有 BNO085 的 ARVR 稳定，但仍能提供良好的效果。
 * MPU-6500 (IMU_MPU6500) & MPU-6050 (IMU_MPU6050)
-  * Using internal DMP to fuse Gyroscope and Accelerometer. Can drift substantially.
-  * NOTE: Currently the MPU will auto calibrate when powered on. You *must* place it on the ground and *DO NOT* move it until calibration is complete (for a few seconds). **LED on the ESP will blink 5 times after calibration is over.**
+  * 使用内部 DMP 融合陀螺仪和加速度计。可以大幅度漂移。
+  * 注意：目前 MPU 会在开机时自动校准。您*必须*将它放在平面上并且*不要*移动它，直到校准完成（几秒钟）。 **校准结束后，ESP 上的 LED 将闪烁 5 次。**
 * BNO055 (IMU_BNO055)
-  * Performs much worse than BNO080, despite having the same hardware. Not recommended for use.
-* MPU-9250 (IMU_MPU9250)
-  * Using Mahony sensor fusion of Gyroscope, Magnetometer and Accelerometer, requires good magnetic environment.
-  * See *Sensor calibration* below for info on calibrating this sensor.
-  * Specify `IMU_MPU6500` in your `defines.h` to use without magentometer in 6DoF mode.
-  * Experimental support!
+  * 尽管硬件相同，但性能比 BNO080 差得多。不推荐使用。
+* 磁力计混合方案 (IMU_MPU9250)
+  * 使用陀螺仪、磁力计和加速度计的 Mahony 传感器融合，需要良好的磁环境。
+  * 有关校准此传感器的信息，请参阅下面的*传感器校准*。
+  * 在 `defines.h` 中指定 `IMU_MPU6500` 以在 6DoF 模式下不使用磁力计。
+  * 实验支持！
 * BMI160 (IMU_BMI160)
-  * Using Mahony sensor fusion of Gyroscope and Accelerometer
-  * See *Sensor calibration* below for info on calibrating this sensor.
-  * Experimental support!
+  * 使用陀螺仪和加速度计的 Mahony 传感器融合
+  * 有关校准此传感器的信息，请参阅下面的*传感器校准*。
+  * 实验支持！
 * ICM-20948 (IMU_ICM20948)
-  * Using fision in internal DMP for 6Dof or 9DoF, 9DoF mode requires good magnetic environment.
-  * Comment out `USE_6DOF` in `debug.h` for 9DoF mode.
-  * Experimental support!
+  * 在内部 DMP 中使用 fision 进行 6DoF 或 9DoF，9DoF 模式需要良好的磁环境。
+  * 在 9DoF 模式的 `debug.h` 中注释掉 `USE_6DOF`。
+  * 实验支持！
 
-Firmware can work with both ESP8266 and ESP32. Please edit `defines.h` and set your pinout properly according to how you connected the IMU.
+固件兼容ESP8266和ESP32。请编辑 `defines.h` 并根据您连接IMU的方式正确设置您的引脚。
+## 传感器校准
 
-## Sensor calibration
+*通常建议打开跟踪器并让它们在平坦的表面上放置几秒钟。**这将更好地校准它们。
 
-*It is generally recommended to turn trackers on and let them lay down on a flat surface for a few seconds.** This will calibrate them better.
+**一些跟踪器在启动时需要特殊的校准步骤：**
+* 磁力计混合方案、BMI160 [可参考哔哩哔哩的视频教程](https://www.bilibili.com/video/BV1314y1b7Fz)
+  * 芯片朝下打开它们。翻转并放在表面上几秒钟，LED 将亮起。
+  * 闪烁几下后，LED 将再次亮起
+  * 以 8 种动作缓慢旋转跟踪器，面向不同方向持续约 30 秒，同时 LED 闪烁
+  * 校准完成后 LED 将关闭
+  * 下次关机不用再校准，校准值会保存下来以备下次使用
+  
+## 使用网页刷机（推荐！）
+* 安装完驱动后打开[此网站](https://slimevr-firmware.bscotch.ca/)并选择此分支即可！
 
-**Some trackers require special calibration steps on startup:**
-* MPU-9250, BMI160
-  * Turn them on with chip facing down. Flip up and put on a surface for a couple of seconds, the LED will light up.
-  * After a few blinks, the LED will light up again
-  * Slowly rotate the tracker in an 8-motion facing different derections for about 30 seconds, while LED is blinking
-  * LED will turn off when calibration is complete
-  * You don't have to calibrate next time you power it off, calibration values will be saved for the next use
+## 在 Linux 上刷机
 
-## Uploading On Linux
+按照此链接[Platformio](https://docs.platformio.org/en/latest//faq.html#platformio-udev-rules)中的说明进行操作，这应该可以解决任何权限被拒绝错误
 
-Follow the instructions in this link [Platformio](https://docs.platformio.org/en/latest//faq.html#platformio-udev-rules), this should solve any permission denied errors
+## 贡献
 
-## Contributions
+通过为本项目做出贡献，您将所有代码置于 MIT 或限制较少的许可下，并且您证明您使用的代码与这些许可兼容或由您创作。如果您在工作时间这样做，您证明您的雇主对此表示同意。
 
-By contributing to this project you are placing all your code under MIT or less restricting licenses, and you certify that the code you have used is compatible with those licenses or is authored by you. If you're doing so on your work time, you certify that your employer is okay with this.
-
-For an explanation on how to contribute, see [`CONTRIBUTING.md`](CONTRIBUTING.md)
+有关如何贡献的说明，请参阅 [`CONTRIBUTING.md`](CONTRIBUTING.md)
