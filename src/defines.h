@@ -29,7 +29,7 @@
 #define IMU IMU_MPU9250
 #define SECOND_IMU IMU_MPU9250
 #define BOARD BOARD_NODEMCU
-#define IMU_ROTATION DEG_180
+#define IMU_ROTATION DEG_0
 #define SECOND_IMU_ROTATION DEG_90
 // Second IMU's axis status, true for align and false for 5akura1's scheme
 #define SECOND_IMU_AXIS_ALIGN true

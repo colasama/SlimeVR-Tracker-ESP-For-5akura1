@@ -3411,8 +3411,8 @@ void MPU9250_Base::getMagnetometer(int16_t* mx, int16_t* my, int16_t* mz) {
     //read mag from SLV0 external sensor registers
     I2Cdev::readBytes(devAddr, MPU9250_RA_EXT_SENS_DATA_00, 7, buffer);
     if (!(buffer[6] & 0x8)) { // Check ST2 for sensor overflow
-        *mx = (((int16_t)buffer[1]) << 8) | buffer[0];
-        *my = (((int16_t)buffer[3]) << 8) | buffer[2];
+        *mx = - (((int16_t)buffer[1]) << 8) | buffer[0];
+        *my = - (((int16_t)buffer[3]) << 8) | buffer[2];
         *mz = (((int16_t)buffer[5]) << 8) | buffer[4];
     }
 }
