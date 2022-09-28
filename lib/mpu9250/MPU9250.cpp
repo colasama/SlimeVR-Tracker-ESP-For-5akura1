@@ -59,6 +59,27 @@ void MPU9250_Base::initialize(uint8_t address) {
     
     // Enable Magnetometer
     initilaizeMagnetometer();
+
+    // Enable I2C bypass to access magnetometer
+    setI2CBypassEnabled(true);
+
+    // Enable magnetometer
+    I2Cdev::writeByte(0x0D, 0x0B, 0x01);
+    // Set continuous reading mode 200hz
+    I2Cdev::writeByte(0x0D, 0x09, 0x85);
+
+    setI2CBypassEnabled(false);
+
+    // Set up slave 0 for reading
+    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, 0x0D|0x80);
+    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG,  0x00);
+    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x96);
+    delay(10);
+
+    // Enable I2C master to read from magnetometer
+    setI2CMasterModeEnabled(true);
+    // Set I2C clock speed to 400kHz
+    setMasterClockSpeed(13);
 }
 
 uint8_t MPU9250_Base::getAddr() {
@@ -71,7 +92,7 @@ uint8_t MPU9250_Base::getAddr() {
  */
 bool MPU9250_Base::testConnection() {
     uint8_t deviceId = getDeviceID();
-    return deviceId == 0x71 || deviceId == 0x73; // MPU9250 or MPU9255
+    return deviceId == 0x68 || deviceId == 0x70; // MPU6500 or MPU6050
 }
 
 // AUX_VDDIO register (InvenSense demo code calls this RA_*G_OFFS_TC)
@@ -3302,85 +3323,30 @@ int8_t MPU9250_Base::GetCurrentFIFOPacket(uint8_t *data, uint8_t length) { // ov
 }
 
 void MPU9250_Base::initilaizeMagnetometer() {
-    // Set I2C clock speed to 400kHz
-    setMasterClockSpeed(0x0D);
-    setI2CMasterModeEnabled(true);
-
-    // Set the I2C slave address of AK8963 and set for write.
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, MPU9250_RA_MAG_ADDRESS);
-    // I2C slave 0 register address from where to begin data transfer
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG, MPU9250_RA_MAG_CNTL2);
-    // Reset AK8963
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_DO, 0x01);
-    // Enable I2C and write 1 byte
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x81);
-    delay(50);
-
-    // Set the I2C slave address of AK8963 and set for write.
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, MPU9250_RA_MAG_ADDRESS);
-    // I2C slave 0 register address from where to begin data transfer
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG, MPU9250_RA_MAG_CNTL1);
-    // Power down magnetometer  
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_DO, 0x00);
-    // Enable I2C and write 1 byte
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x81);
-    delay(50);
-
-    // Set the I2C slave address of AK8963 and set for write.
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, MPU9250_RA_MAG_ADDRESS);
-    // I2C slave 0 register address from where to begin data transfer
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG, MPU9250_RA_MAG_CNTL1);
-    // Enter fuze mode
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_DO, 0x0F);
-    // Enable I2C and write 1 byte
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x81);
-    delay(50);
-
-    // Set the I2C slave address of AK8963 and set for read.
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, MPU9250_RA_MAG_ADDRESS | 0x80);
-    // I2C slave 0 register address from where to begin data transfer
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG, MPU9250_RA_MAG_ASAX);
-    // Enable I2C and read 3 bytes
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x83);
-
-    delay(50);
-
-    // Read the x-, y-, and z-axis calibration values
-    I2Cdev::readBytes(devAddr, MPU9250_RA_EXT_SENS_DATA_00, 3, buffer);
-    // Return x-axis sensitivity adjustment values, etc.
-    asax = (0.5 * (buffer[0] - 128)) / 128 + 1;
-    asay = (0.5 * (buffer[1] - 128)) / 128 + 1;
-    asaz = (0.5 * (buffer[2] - 128)) / 128 + 1;
-
-    // Set the I2C slave address of AK8963 and set for write.
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, MPU9250_RA_MAG_ADDRESS);
-    // I2C slave 0 register address from where to begin data transfer
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG, MPU9250_RA_MAG_CNTL1);
-    // Power down magnetometer  
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_DO, 0x00);                       
-    // Enable I2C and transfer 1 byte
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x81);                     
-    delay(50);
-
-    // Set the I2C slave address of AK8963 and set for write.
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, MPU9250_RA_MAG_ADDRESS);
-    // I2C slave 0 register address from where to begin data transfer 
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG, MPU9250_RA_MAG_CNTL1);
-
-    // Configure the magnetometer for continuous read and highest resolution
-    // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
-    // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_DO, 0x16);       // Set magnetometer data resolution and sample ODR
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x81);     // Enable I2C and transfer 1 byte
-    delay(50);
-
-    // Set up magnetometer as slave 0 for reading
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, MPU9250_RA_MAG_ADDRESS|0x80);
-    // Start reading from HXL register
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG,  MPU9250_RA_MAG_XOUT_L);
-    // Read 7 bytes (until ST2 register), group LSB and MSB
-    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x87);
+    // Enable I2C bypass to access magnetometer
+    setI2CBypassEnabled(true);
+    // Power down magnetometer
+    
     delay(10);
+
+    //mag -> setMode(0);
+    I2Cdev::writeByte(0x0D, 0x0B, 0x01);
+
+    //mag -> setMode(0x0F);
+    I2Cdev::writeByte(0x0D, 0x09, 0x00|0x10|0x00|0x01);
+
+    delay(10);
+
+    // Disable I2C bypass to avoid conflicts with aux tracker's magnetometer
+    setI2CBypassEnabled(false);
+
+    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_ADDR, 0x0D|0x80);
+    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_REG,  0x00);
+    I2Cdev::writeByte(devAddr, MPU9250_RA_I2C_SLV0_CTRL, 0x80|0x00|0x00|0x10|0x06);
+    delay(10);
+
+    // Enable I2C master to read from magnetometer
+    setI2CMasterModeEnabled(true);
 }
 
 /** Verify the I2C connection.
@@ -3431,9 +3397,9 @@ void MPU9250_Base::getMagnetometer(int16_t* mx, int16_t* my, int16_t* mz) {
     //read mag from SLV0 external sensor registers
     I2Cdev::readBytes(devAddr, MPU9250_RA_EXT_SENS_DATA_00, 7, buffer);
     if (!(buffer[6] & 0x8)) { // Check ST2 for sensor overflow
-        *mx = (((int16_t)buffer[1]) << 8) | buffer[0];
-        *my = (((int16_t)buffer[3]) << 8) | buffer[2];
-        *mz = (((int16_t)buffer[5]) << 8) | buffer[4];
+        *my = -((((int16_t)buffer[1]) << 8) | buffer[0]);
+        *mx = -((((int16_t)buffer[3]) << 8) | buffer[2]);
+        *mz = ((((int16_t)buffer[5]) << 8) | buffer[4]);
     }
 }
 
