@@ -20,7 +20,7 @@ public:
   bool QMI8658C_dveGetEulerAngles(float *yaw);
   void QMI8658C_Check(void);
   int16_t getTemperature();
-  
+
 public:
   int16_t ax, ay, az, gx, gy, gz;
   float pith, roll, yaw;

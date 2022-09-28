@@ -52,79 +52,9 @@ bool QMI8658C::QMI8658C_dveInit(void)
   return false;
 }
 
-bool QMI8658C::QMI8658C_dveGetEulerAngles(float *gyro, float *yaw)
-{
-  unsigned long now = millis();   //当前时间(ms)
-  dt = (now - lastTime) / 1000.0; //微分时间(s)
-  lastTime = now;                 //上一次采样时间(ms)
-  gz = QMI8658C_readBytes(GyrX_L);      //读取六轴原始数值
-  float gyroz = -(gz - gzo) / 32.00 * dt;
-  if (fabs(gyroz) <= 0.05)
-  {
-    gyroz = 0.00;
-  }
-  agz += gyroz; //z轴角速度积分
-
-  *gyro = gyroz;
-
-  *yaw = agz;
-  return false;
-}
-bool QMI8658C::QMI8658C_dveGetEulerAngles(float *Yaw)
-{
-  unsigned long now = millis();   //当前时间(ms)
-  dt = (now - lastTime) / 1000.0; //微分时间(s)
-  lastTime = now;                 //上一次采样时间(ms)
-  gz = QMI8658C_readBytes(GyrX_L);
-  float gyroz = -(gz - gzo) / 32.00 * dt; //z轴角速度< 131.0 为传感器比例系数常量，详细信息请查阅MPU-6050_DataSheet>
-  if (fabs(gyroz) <= 0.05)
-  {
-    gyroz = 0.00;
-  }
-  agz += gyroz; //z轴角速度积分
-  *Yaw = agz;
-  return false;
-}
-void HDSC_IIC_Test(void)
-{
-  float gyro, is_yaw;
-  uint8_t IIC_buff[10];
-  uint8_t a = 0;
-  Wire.requestFrom(0x51, 6); // request 6 bytes from slave device #2
-  while (Wire.available())   // slave may send less than requested
-  {
-    IIC_buff[a++] = Wire.read(); // receive a byte as character
-  }
-
-  if ((IIC_buff[0] == 0XA1) && (IIC_buff[5] == 0XB1))
-  {
-
-    gyro = ((IIC_buff[1] << 8) | (IIC_buff[2])) / 1000.00;
-    is_yaw = ((IIC_buff[3] << 8) | (IIC_buff[4])) / 100.00;
-
-    Serial.print(gyro);
-    Serial.print("\t");
-    Serial.print(is_yaw);
-  }
-  else
-  {
-    /* code */
-    Serial.println("Contact Changhua :STM8S003F3_MPU6050 data error"); // print the character
-    return;
-  }
-  // for (int i = 0; i < a; i++)
-  // {
-  //   Serial.print(IIC_buff[i], HEX);
-  //   Serial.print("\t");
-  // }
-  Serial.println("");
-}
-
 uint8_t QMI8658C::getDeviceID() {
     uint8_t chip_id=0x00;
     I2Cdev::readBytes(ADDRESS, WHO_AM_I, 1, &chip_id);
-    Serial.print("WHO_AM_I: 0X");
-    Serial.println(chip_id, HEX);
     return chip_id;
 }
 
@@ -137,34 +67,4 @@ bool QMI8658C::testConnection()
 // 获取温度，尚未编写
 int16_t QMI8658C::getTemperature() {
   return 0;
-}
-
-void QMI8658C::QMI8658C_Check(void)
-{
-  Wire.begin();
-  uint8_t address_Test = 0;
-  int error = 1;
-  delay(1000);
-  // do
-  // {
-  //   Wire.beginTransmission(address_Test);
-  //   error = Wire.endTransmission();
-
-  //   Serial.print("address_Test: 0X");
-  //   Serial.println(address_Test, HEX);
-  //   address_Test++;
-  //   delay(100);
-  // } while (error); //扫描从机设备
-  // Serial.println("address_Test: OK");
-
-  Wire.beginTransmission(0x51);
-  Wire.write(110);
-  Wire.endTransmission();
-
-  for (;;)
-  {
-
-    HDSC_IIC_Test();
-    //delay(1);
-  }
 }

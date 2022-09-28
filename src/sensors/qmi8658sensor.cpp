@@ -189,16 +189,16 @@ void QMI8658Sensor::getScaledValues(float Gxyz[3], float Axyz[3])
     // Gxyz[0] = ((float)gx - (calibration->G_off[0] + (tempDiff * LSB_COMP_PER_TEMP_X_MAP[quant]))) * GSCALE;
     // Gxyz[1] = ((float)gy - (calibration->G_off[1] + (tempDiff * LSB_COMP_PER_TEMP_Y_MAP[quant]))) * GSCALE;
     // Gxyz[2] = ((float)gz - (calibration->G_off[2] + (tempDiff * LSB_COMP_PER_TEMP_Z_MAP[quant]))) * GSCALE;
-    // Gxyz[0] = (float)gx * GSCALE;
-    // Gxyz[1] = (float)gy * GSCALE;
-    // Gxyz[2] = (float)gz * GSCALE;
+    Gxyz[0] = (float)gx * GSCALE;
+    Gxyz[1] = (float)gy * GSCALE;
+    Gxyz[2] = (float)gz * GSCALE;
 
     Axyz[0] = (float)ax;
     Axyz[1] = (float)ay;
     Axyz[2] = (float)az;
 
-    m_Logger.debug("gx: %f, gy: %f, gz: %f", Gxyz[0], Gxyz[1], Gxyz[2]);
-    m_Logger.debug("ax: %f, ay: %f, az: %f", Axyz[0], Axyz[1], Axyz[2]);
+    // m_Logger.debug("gx: %f, gy: %f, gz: %f", Gxyz[0], Gxyz[1], Gxyz[2]);
+    // m_Logger.debug("ax: %f, ay: %f, az: %f", Axyz[0], Axyz[1], Axyz[2]);
     //apply offsets (bias) and scale factors from Magneto
     // #if useFullCalibrationMatrix == true
     //     float temp[3];
