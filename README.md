@@ -1,4 +1,4 @@
-# SlimeVR Tracker firmware for ESP QMI8658
+# SlimeVR Tracker firmware for ESP
 
 > 基于~~真的很早期的~~ QMI8658 Arduino 库与 BMI160 固件部分修改的实验性的 QMI8658 Slime VR 固件，与 BMI160 一样需要校准。也许存在自增的问题，欢迎各位提出 pr。
 
@@ -40,7 +40,7 @@ The following IMUs and their corresponding `IMU` values are supported by the fir
   * See *Sensor calibration* below for info on calibrating this sensor.
   * Experimental support!
   * ~~是的你会发现这是完全复制了 BMI160 的简介！~~
-
+  
 Firmware can work with both ESP8266 and ESP32. Please edit `defines.h` and set your pinout properly according to how you connected the IMU.
 
 ## Sensor calibration
@@ -62,3 +62,5 @@ Follow the instructions in this link [Platformio](https://docs.platformio.org/en
 ## Contributions
 
 By contributing to this project you are placing all your code under MIT or less restricting licenses, and you certify that the code you have used is compatible with those licenses or is authored by you. If you're doing so on your work time, you certify that your employer is okay with this.
+
+For an explanation on how to contribute, see [`CONTRIBUTING.md`](CONTRIBUTING.md)
