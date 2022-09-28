@@ -79,23 +79,26 @@ void QMI8658Sensor::motionSetup() {
     // imu.getAcceleration(&ax, &ay, &az);
     float g_az = (float)az / 8192; // For 2G sensitivity
     m_Logger.info("G_az: %02f", g_az);
-    // if(g_az < -0.75f) {
-    //     LEDManager::off(CALIBRATING_LED);
-    //     m_Logger.info("Flip front to confirm start calibration");
-    //     delay(5000);
-    //     imu.getAcceleration(&ax, &ay, &az);
-    //     g_az = (float)az / 8192;
-    //     if(g_az > 0.75f)
-    //     {
-    //         m_Logger.debug("Starting calibration...");
-    //         startCalibration(0);
-    //     }
+    if(g_az < -0.75f) {
+        LEDManager::off(CALIBRATING_LED);
+        m_Logger.info("Flip front to confirm start calibration");
+        delay(5000);
+        ax = QMI8658C_readBytes(cmd[0]);
+        ay = QMI8658C_readBytes(cmd[1]);
+        az = QMI8658C_readBytes(cmd[2]);
+        // imu.getAcceleration(&ax, &ay, &az);
+        g_az = (float)az / 8192;
+        if(g_az > 0.75f)
+        {
+            m_Logger.debug("Starting calibration...");
+            startCalibration(0);
+        }
 
-    //     LEDManager::on(CALIBRATING_LED);
-    // }
+        LEDManager::on(CALIBRATING_LED);
+    }
 
     DeviceConfig * const config = getConfigPtr();
-    // calibration = &config->calibration[sensorId];
+    calibration = &config->calibration[sensorId];
     working = true;
 }
 
@@ -144,11 +147,11 @@ void QMI8658Sensor::motionLoop() {
 float QMI8658Sensor::getTemperature()
 {
     // Middle value is 23 degrees C (0x0000)
-    #define TEMP_ZERO 23
+    // #define TEMP_ZERO 23
     // Temperature per step from -41 + 1/2^9 degrees C (0x8001) to 87 - 1/2^9 degrees C (0x7FFF)
-    constexpr float TEMP_STEP = 128. / 65535;
+    // constexpr float TEMP_STEP = 128. / 65535;
     // return (imu.getTemperature() * TEMP_STEP) + TEMP_ZERO;
-    return (QMI8658C_readBytes(cmd[3]) * TEMP_STEP) + TEMP_ZERO;
+    return (QMI8658C_readBytes(cmd[3]) / 256) - 5.2;
 }
 
 void QMI8658Sensor::getScaledValues(float Gxyz[3], float Axyz[3])
@@ -170,8 +173,8 @@ void QMI8658Sensor::getScaledValues(float Gxyz[3], float Axyz[3])
 #endif
 
     float temperature = getTemperature();
-    // float tempDiff = temperature - calibration->temperature;
-    float tempDiff = 0;
+    float tempDiff = temperature - calibration->temperature;
+    // float tempDiff = 0;
     uint8_t quant = map(temperature, 15, 75, 0, 12);
 
     int16_t ax, ay, az;
@@ -186,12 +189,12 @@ void QMI8658Sensor::getScaledValues(float Gxyz[3], float Axyz[3])
     az = QMI8658C_readBytes(cmd[2]);
     // TODO: Sensitivity over temp compensation?
     // TODO: Cross-axis sensitivity compensation?
-    // Gxyz[0] = ((float)gx - (calibration->G_off[0] + (tempDiff * LSB_COMP_PER_TEMP_X_MAP[quant]))) * GSCALE;
-    // Gxyz[1] = ((float)gy - (calibration->G_off[1] + (tempDiff * LSB_COMP_PER_TEMP_Y_MAP[quant]))) * GSCALE;
-    // Gxyz[2] = ((float)gz - (calibration->G_off[2] + (tempDiff * LSB_COMP_PER_TEMP_Z_MAP[quant]))) * GSCALE;
-    Gxyz[0] = (float)gx * GSCALE;
-    Gxyz[1] = (float)gy * GSCALE;
-    Gxyz[2] = (float)gz * GSCALE;
+    Gxyz[0] = ((float)gx - (calibration->G_off[0] + (tempDiff * LSB_COMP_PER_TEMP_X_MAP[quant]))) * GSCALE;
+    Gxyz[1] = ((float)gy - (calibration->G_off[1] + (tempDiff * LSB_COMP_PER_TEMP_Y_MAP[quant]))) * GSCALE;
+    Gxyz[2] = ((float)gz - (calibration->G_off[2] + (tempDiff * LSB_COMP_PER_TEMP_Z_MAP[quant]))) * GSCALE;
+    // Gxyz[0] = (float)gx * GSCALE;
+    // Gxyz[1] = (float)gy * GSCALE;
+    // Gxyz[2] = (float)gz * GSCALE;
 
     Axyz[0] = (float)ax;
     Axyz[1] = (float)ay;
@@ -200,99 +203,103 @@ void QMI8658Sensor::getScaledValues(float Gxyz[3], float Axyz[3])
     // m_Logger.debug("gx: %f, gy: %f, gz: %f", Gxyz[0], Gxyz[1], Gxyz[2]);
     // m_Logger.debug("ax: %f, ay: %f, az: %f", Axyz[0], Axyz[1], Axyz[2]);
     //apply offsets (bias) and scale factors from Magneto
-    // #if useFullCalibrationMatrix == true
-    //     float temp[3];
-    //     for (uint8_t i = 0; i < 3; i++)
-    //         temp[i] = (Axyz[i] - calibration->A_B[i]);
-    //     Axyz[0] = calibration->A_Ainv[0][0] * temp[0] + calibration->A_Ainv[0][1] * temp[1] + calibration->A_Ainv[0][2] * temp[2];
-    //     Axyz[1] = calibration->A_Ainv[1][0] * temp[0] + calibration->A_Ainv[1][1] * temp[1] + calibration->A_Ainv[1][2] * temp[2];
-    //     Axyz[2] = calibration->A_Ainv[2][0] * temp[0] + calibration->A_Ainv[2][1] * temp[1] + calibration->A_Ainv[2][2] * temp[2];
-    // #else
-    //     for (uint8_t i = 0; i < 3; i++)
-    //         Axyz[i] = (Axyz[i] - calibration->A_B[i]);
-    // #endif
+    #if useFullCalibrationMatrix == true
+        float temp[3];
+        for (uint8_t i = 0; i < 3; i++)
+            temp[i] = (Axyz[i] - calibration->A_B[i]);
+        Axyz[0] = calibration->A_Ainv[0][0] * temp[0] + calibration->A_Ainv[0][1] * temp[1] + calibration->A_Ainv[0][2] * temp[2];
+        Axyz[1] = calibration->A_Ainv[1][0] * temp[0] + calibration->A_Ainv[1][1] * temp[1] + calibration->A_Ainv[1][2] * temp[2];
+        Axyz[2] = calibration->A_Ainv[2][0] * temp[0] + calibration->A_Ainv[2][1] * temp[1] + calibration->A_Ainv[2][2] * temp[2];
+    #else
+        for (uint8_t i = 0; i < 3; i++)
+            Axyz[i] = (Axyz[i] - calibration->A_B[i]);
+    #endif
 }
 
-// void QMI8658Sensor::startCalibration(int calibrationType) {
-//     LEDManager::on(CALIBRATING_LED);
-//     m_Logger.debug("Gathering raw data for device calibration...");
-//     DeviceConfig * const config = getConfigPtr();
+void QMI8658Sensor::startCalibration(int calibrationType) {
+    LEDManager::on(CALIBRATING_LED);
+    m_Logger.debug("Gathering raw data for device calibration...");
+    DeviceConfig * const config = getConfigPtr();
 
-//     // Wait for sensor to calm down before calibration
-//     m_Logger.info("Put down the device and wait for baseline gyro reading calibration");
-//     delay(2000);
-//     float temperature = getTemperature();
-//     config->calibration[sensorId].temperature = temperature;
-//     uint16_t gyroCalibrationSamples = 2500;
-//     float rawGxyz[3] = {0};
+    // Wait for sensor to calm down before calibration
+    m_Logger.info("Put down the device and wait for baseline gyro reading calibration");
+    delay(2000);
+    float temperature = getTemperature();
+    config->calibration[sensorId].temperature = temperature;
+    uint16_t gyroCalibrationSamples = 2500;
+    float rawGxyz[3] = {0};
 
-// #ifdef FULL_DEBUG
-//     m_Logger.trace("Calibration temperature: %f", temperature);
-// #endif
+    m_Logger.debug("Calibration temperature: %f", temperature);
+#ifdef FULL_DEBUG
+    m_Logger.trace("Calibration temperature: %f", temperature);
+#endif
 
-//     for (int i = 0; i < gyroCalibrationSamples; i++)
-//     {
-//         LEDManager::on(CALIBRATING_LED);
-//         int16_t gx, gy, gz;
-//         imu.getRotation(&gx, &gy, &gz);
-//         rawGxyz[0] += float(gx);
-//         rawGxyz[1] += float(gy);
-//         rawGxyz[2] += float(gz);
-//         LEDManager::off(CALIBRATING_LED);
-//     }
-//     config->calibration[sensorId].G_off[0] = rawGxyz[0] / gyroCalibrationSamples;
-//     config->calibration[sensorId].G_off[1] = rawGxyz[1] / gyroCalibrationSamples;
-//     config->calibration[sensorId].G_off[2] = rawGxyz[2] / gyroCalibrationSamples;
+    for (int i = 0; i < gyroCalibrationSamples; i++)
+    {
+        LEDManager::on(CALIBRATING_LED);
+        int16_t gx, gy, gz;
+        gx = QMI8658C_readBytes(cmd[4]);
+        gy = QMI8658C_readBytes(cmd[5]);
+        gz = QMI8658C_readBytes(cmd[6]);
+        //imu.getRotation(&gx, &gy, &gz);
+        rawGxyz[0] += float(gx);
+        rawGxyz[1] += float(gy);
+        rawGxyz[2] += float(gz);
+        LEDManager::off(CALIBRATING_LED);
+    }
+    config->calibration[sensorId].G_off[0] = rawGxyz[0] / gyroCalibrationSamples;
+    config->calibration[sensorId].G_off[1] = rawGxyz[1] / gyroCalibrationSamples;
+    config->calibration[sensorId].G_off[2] = rawGxyz[2] / gyroCalibrationSamples;
 
-// #ifdef FULL_DEBUG
-//     m_Logger.trace("Gyro calibration results: %f %f %f", config->calibration[sensorId].G_off[0], config->calibration[sensorId].G_off[1], config->calibration[sensorId].G_off[2]);
-// #endif
+#ifdef FULL_DEBUG
+    m_Logger.trace("Gyro calibration results: %f %f %f", config->calibration[sensorId].G_off[0], config->calibration[sensorId].G_off[1], config->calibration[sensorId].G_off[2]);
+#endif
 
-//     // Blink calibrating led before user should rotate the sensor
-//     m_Logger.info("After 3 seconds, Gently rotate the device while it's gathering accelerometer data");
-//     LEDManager::on(CALIBRATING_LED);
-//     delay(1500);
-//     LEDManager::off(CALIBRATING_LED);
-//     delay(1500);
-//     m_Logger.debug("Gathering accelerometer data...");
+    // Blink calibrating led before user should rotate the sensor
+    m_Logger.info("After 3 seconds, Gently rotate the device while it's gathering accelerometer data");
+    LEDManager::on(CALIBRATING_LED);
+    delay(1500);
+    LEDManager::off(CALIBRATING_LED);
+    delay(1500);
+    m_Logger.debug("Gathering accelerometer data...");
 
-//     uint16_t accelCalibrationSamples = 300;
-//     float *calibrationDataAcc = (float*)malloc(accelCalibrationSamples * 3 * sizeof(float));
-//     for (int i = 0; i < accelCalibrationSamples; i++)
-//     {
-//         LEDManager::on(CALIBRATING_LED);
-//         int16_t ax, ay, az;
-//         ax = QMI8658C_readBytes(cmd[0]);
-//         ay = QMI8658C_readBytes(cmd[1]);
-//         az = QMI8658C_readBytes(cmd[2]);
-//         // imu.getAcceleration(&ax, &ay, &az);
-//         calibrationDataAcc[i * 3 + 0] = ax;
-//         calibrationDataAcc[i * 3 + 1] = ay;
-//         calibrationDataAcc[i * 3 + 2] = az;
-//         LEDManager::off(CALIBRATING_LED);
-//         delay(100);
-//     }
-//     LEDManager::off(CALIBRATING_LED);
-//     m_Logger.debug("Calculating calibration data...");
+    uint16_t accelCalibrationSamples = 300;
+    float *calibrationDataAcc = (float*)malloc(accelCalibrationSamples * 3 * sizeof(float));
+    for (int i = 0; i < accelCalibrationSamples; i++)
+    {
+        LEDManager::on(CALIBRATING_LED);
+        int16_t ax, ay, az;
+        ax = QMI8658C_readBytes(cmd[0]);
+        ay = QMI8658C_readBytes(cmd[1]);
+        az = QMI8658C_readBytes(cmd[2]);
+        // imu.getAcceleration(&ax, &ay, &az);
+        calibrationDataAcc[i * 3 + 0] = ax;
+        calibrationDataAcc[i * 3 + 1] = ay;
+        calibrationDataAcc[i * 3 + 2] = az;
+        LEDManager::off(CALIBRATING_LED);
+        delay(100);
+    }
+    LEDManager::off(CALIBRATING_LED);
+    m_Logger.debug("Calculating calibration data...");
 
-//     float A_BAinv[4][3];
-//     CalculateCalibration(calibrationDataAcc, accelCalibrationSamples, A_BAinv);
-//     free(calibrationDataAcc);
-//     m_Logger.debug("Finished Calculate Calibration data");
-//     m_Logger.debug("Accelerometer calibration matrix:");
-//     m_Logger.debug("{");
-//     for (int i = 0; i < 3; i++)
-//     {
-//         config->calibration[sensorId].A_B[i] = A_BAinv[0][i];
-//         config->calibration[sensorId].A_Ainv[0][i] = A_BAinv[1][i];
-//         config->calibration[sensorId].A_Ainv[1][i] = A_BAinv[2][i];
-//         config->calibration[sensorId].A_Ainv[2][i] = A_BAinv[3][i];
-//         m_Logger.debug("  %f, %f, %f, %f", A_BAinv[0][i], A_BAinv[1][i], A_BAinv[2][i], A_BAinv[3][i]);
-//     }
-//     m_Logger.debug("}");
-//     m_Logger.debug("Now Saving EEPROM");
-//     setConfig(*config);
-//     m_Logger.debug("Finished Saving EEPROM");
-//     m_Logger.info("Calibration data gathered");
-//     delay(5000);
-// }
+    float A_BAinv[4][3];
+    CalculateCalibration(calibrationDataAcc, accelCalibrationSamples, A_BAinv);
+    free(calibrationDataAcc);
+    m_Logger.debug("Finished Calculate Calibration data");
+    m_Logger.debug("Accelerometer calibration matrix:");
+    m_Logger.debug("{");
+    for (int i = 0; i < 3; i++)
+    {
+        config->calibration[sensorId].A_B[i] = A_BAinv[0][i];
+        config->calibration[sensorId].A_Ainv[0][i] = A_BAinv[1][i];
+        config->calibration[sensorId].A_Ainv[1][i] = A_BAinv[2][i];
+        config->calibration[sensorId].A_Ainv[2][i] = A_BAinv[3][i];
+        m_Logger.debug("  %f, %f, %f, %f", A_BAinv[0][i], A_BAinv[1][i], A_BAinv[2][i], A_BAinv[3][i]);
+    }
+    m_Logger.debug("}");
+    m_Logger.debug("Now Saving EEPROM");
+    setConfig(*config);
+    m_Logger.debug("Finished Saving EEPROM");
+    m_Logger.info("Calibration data gathered");
+    delay(5000);
+}

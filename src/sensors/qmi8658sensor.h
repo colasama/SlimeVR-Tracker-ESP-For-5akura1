@@ -33,12 +33,12 @@ class QMI8658Sensor : public Sensor {
         ~QMI8658Sensor(){};
         void motionSetup() override final;
         void motionLoop() override final;
-        // void startCalibration(int calibrationType) override final;
+        void startCalibration(int calibrationType) override final;
         void getScaledValues(float Gxyz[3], float Axyz[3]);
         float getTemperature();
     private:
         QMI8658C imu {};
-        // CalibrationConfig * calibration;
+        CalibrationConfig * calibration;
         float q[4] {1.0f, 0.0f, 0.0f, 0.0f};
         // Loop timing globals
         uint32_t now = 0, last = 0;   //micros() timers

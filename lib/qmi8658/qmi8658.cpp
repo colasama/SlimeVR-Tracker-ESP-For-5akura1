@@ -36,7 +36,7 @@ bool QMI8658C::QMI8658C_dveInit(void)
   I2Cdev::writeByte(ADDRESS, CTRL1, 0x40); //Serial Interface and Sensor Enable<串行接口（SPI或I 2 C）地址自动递增>
   I2Cdev::writeByte(ADDRESS, CTRL7, 0x03); //Enable Sensors and Configure Data Reads<Enable Gyroscope Accelerometer>
 
-  I2Cdev::writeByte(ADDRESS, CTRL2, 0x14); //Accelerometer Settings<0x04: ±2g  500Hz><0x14: ±4g  500Hz>
+  I2Cdev::writeByte(ADDRESS, CTRL2, 0x14); //Accelerometer Settings<0x04: ±2g  500Hz> <0x14: ±4g  500Hz>
   I2Cdev::writeByte(ADDRESS, CTRL3, 0x54); //Gyroscope Settings<0x64 ±2048dps 500Hz> <0x54 ±512dps 500Hz>
   I2Cdev::writeByte(ADDRESS, CTRL5, 0x11); //Sensor Data Processing Settings<Enable Gyroscope Accelerometer 低通滤波>
 
